@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import kagglehub # kagglehub 추가
 
 # Streamlit 페이지 설정
 st.set_page_config(
@@ -13,14 +14,13 @@ st.title("COVID-19 국가별 시계열 분석 대시보드")
 
 @st.cache_data
 def load_data():
-    # KaggleHub에서 다운로드한 경로 사용
-    # Colab 환경에서 실행할 경우 실제 경로를 './kaggle/input/corona-virus-report/' 등으로 설정해야 할 수 있습니다.
-    # 여기서는 KaggleHub 경로가 사용 가능하다고 가정합니다.
-    # 실제 배포 시에는 데이터 파일을 앱과 함께 두거나, 웹에서 로드하는 방식으로 변경해야 합니다.
+    # kagglehub를 사용하여 데이터셋 다운로드 및 경로 확보
+    path = kagglehub.dataset_download("imdevskp/corona-virus-report")
+    
     try:
-        df = pd.read_csv('/kaggle/input/corona-virus-report/full_grouped.csv')
+        df = pd.read_csv(f"{path}/full_grouped.csv")
     except FileNotFoundError:
-        st.error("데이터 파일을 찾을 수 없습니다. `full_grouped.csv` 파일이 `/kaggle/input/corona-virus-report/` 경로에 있는지 확인해주세요.")
+        st.error("데이터 파일을 찾을 수 없습니다. `full_grouped.csv` 파일이 지정된 경로에 있는지 확인해주세요.")
         st.stop()
     
     df['Date'] = pd.to_datetime(df['Date'])
@@ -34,7 +34,7 @@ countries = df_corona['Country/Region'].unique()
 selected_country = st.sidebar.selectbox("국가를 선택하세요:", countries)
 
 # 선택된 국가에 따라 데이터 필터링
-df_country = df_corona[df_corona['Country/Region'] == selected_country]
+df_country = df_corona[df_corona['Country/Region'] == selected_country].copy() # SettingWithCopyWarning 방지
 
 # 'Active' 케이스 계산 (확진자 - 사망자 - 회복자)
 df_country['Active'] = df_country['Confirmed'] - df_country['Deaths'] - df_country['Recovered']
